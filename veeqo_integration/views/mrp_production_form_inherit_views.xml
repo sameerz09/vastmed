@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_mrp_production_form_inherit_rest_of_components" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.rest_of_components</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Modify the 'miscellaneous' page in the form -->
+            <xpath expr="//page[@name='miscellaneous']" position="inside">
+                <group>
+                    <!-- Product field for Rest of Components -->
+                    <field name="product_from_rest_of_components"
+                           readonly="0"
+                           widget="many2one"
+                           options="{'no_create': False}"
+                           attrs="{'invisible': [('process_type', '!=', 'refining')]}"
+                    />
+
+                    <!-- Weight field with widget for UoM display -->
+                    <field name="rest_of_components_weight"
+                           widget="weight"
+                           attrs="{'invisible': [('process_type', '!=', 'refining')]}"
+                    />
+
+                    <!-- Unit of Measure (UOM) field -->
+                    <field name="uom_id"
+                           attrs="{'invisible': [('process_type', '!=', 'refining')]}"
+                    />
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- Inherit the original picking form view -->
+        <record id="view_picking_form_custom" model="ir.ui.view">
+            <field name="name">stock.picking.form.custom</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <!-- Add the new fields after the partner_id field -->
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="shipment"/>
+                    <field name="first_eta"/>
+                    <field name="to_country"/>
+                    <field name="shipping_line"/>
+                    <field name="loading_date"/>
+
+
+                    <!-- Add the button below the new fields -->
+                    <button name="action_fetch_from_ships_go_shipping_widget"
+                            type="object"
+                            string="Fetch from Ships Go"
+                            class="oe_highlight oe_stat_button"
+                            icon="fa-ship"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

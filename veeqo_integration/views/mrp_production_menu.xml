@@ -1,0 +1,56 @@
+<odoo>
+    <!-- Action for Refining -->
+<!--    <record id="action_mrp_production_refining" model="ir.actions.act_window">-->
+<!--        <field name="name">Refining Production Orders</field>-->
+<!--        <field name="res_model">mrp.production</field>-->
+<!--        <field name="view_mode">tree,form</field>-->
+<!--        <field name="domain">[('process_type', '=', 'refining')]</field>-->
+<!--    </record>-->
+
+    <record id="action_mrp_production_refining" model="ir.actions.act_window">
+        <field name="name">Refining Production Orders</field>
+        <field name="res_model">mrp.production</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('process_type', '=', 'refining')]</field>
+        <field name="context">{'default_process_type': 'refining'}</field> <!-- Set default context -->
+    </record>
+
+    <!-- Action for Production -->
+    <record id="action_mrp_production_production" model="ir.actions.act_window">
+        <field name="name">Production Orders</field>
+        <field name="res_model">mrp.production</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('process_type', '=', 'production')]</field>
+    </record>
+
+    <!-- Action for Assembly -->
+    <record id="action_mrp_production_assembly" model="ir.actions.act_window">
+        <field name="name">Assembly Production Orders</field>
+        <field name="res_model">mrp.production</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('process_type', '=', 'assembly')]</field>
+    </record>
+
+    <!-- Main Filtered Production Orders Menu -->
+<!--    <menuitem id="menu_mrp_production_filtered"-->
+<!--              name="Filtered Production Orders"-->
+<!--              parent="mrp.menu_mrp_root" />-->
+
+        <menuitem id="menu_mrp_production_refining"
+                  name="Refining"
+                  action="action_mrp_production_refining"
+                  web_icon="shipsgo_integration,static/src/img/refining_icon.png" />
+
+        <!-- Menu item for Production -->
+        <menuitem id="menu_mrp_production_production"
+                  name="Production"
+                  action="action_mrp_production_production"
+                  web_icon="shipsgo_integration,static/src/img/production_icon.png" />
+
+        <!-- Menu item for Assembly -->
+        <menuitem id="menu_mrp_production_assembly"
+                  name="Assembly"
+                  action="action_mrp_production_assembly"
+                  web_icon="shipsgo_integration,static/src/img/assembly_icon.png" />
+
+</odoo>

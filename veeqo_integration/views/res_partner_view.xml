@@ -1,0 +1,25 @@
+<odoo>
+    <record id="view_res_partner_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Add the checkbox field after the VAT field -->
+            <xpath expr="//field[@name='vat']" position="after">
+                <group>
+                    <field name="shipsgo_payment" string="Shipsgo Payment"/>
+                </group>
+            </xpath>
+            <!-- Add the offer start and end time fields -->
+            <xpath expr="//group" position="inside">
+                <group>
+                    <field name="offer_start_time" string="Offer Start Time"/>
+                    <field name="offer_end_time" string="Offer End Time"/>
+                </group>
+                <group>
+                    <field name="service_provider" string="Service Provider "/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

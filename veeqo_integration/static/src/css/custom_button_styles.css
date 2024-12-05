@@ -1,0 +1,7 @@
+/* custom_button_styles.css */
+.oe_stat_button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+}

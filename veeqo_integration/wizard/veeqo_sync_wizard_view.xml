@@ -1,0 +1,11 @@
+<odoo>
+    <record id="action_veeqo_sync" model="ir.actions.server">
+        <field name="name">Sync Veeqo Products</field>
+        <field name="model_id" ref="model_res_config_settings"/>
+        <field name="binding_model_id" ref="model_res_config_settings"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.env['veeqo.sync.wizard'].create({}).sync_products()
+        </field>
+    </record>
+</odoo>

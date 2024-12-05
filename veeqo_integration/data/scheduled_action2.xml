@@ -1,0 +1,17 @@
+<!-- daily_arrival_check/data/ir_cron_data.xml -->
+
+<odoo>
+    <data noupdate="1">
+        <!-- Define the scheduled action (cron job) -->
+        <record id="ir_cron_daily_arrival_check" model="ir.cron">
+            <field name="name">Daily Arrival Date Check</field>
+            <field name="model_id" ref="model_account_move"/>
+            <field name="state">code</field>
+            <field name="code">model.action_get_latest_arrival_date()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+        </record>
+    </data>
+</odoo>

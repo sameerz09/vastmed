@@ -1,0 +1,15 @@
+<odoo>
+    <record id="view_order_form_custom" model="ir.ui.view">
+        <field name="name">sale.order.form.custom</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Add your fields wherever you'd like within the form -->
+            <group name="custom_contract_info" string="Contract Information">
+                <field name="service_provided"/>
+                <field name="contract_start_date" attrs="{'required': [('service_provided', '=', True)]}"/>
+                <field name="contract_end_date" attrs="{'required': [('service_provided', '=', True)]}"/>
+            </group>
+        </field>
+    </record>
+</odoo>

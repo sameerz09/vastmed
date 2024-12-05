@@ -1,0 +1,13 @@
+<odoo>
+    <record id="view_product_template_form_inherit" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.service.type</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Add the service type selection field after the type field -->
+            <xpath expr="//field[@name='detailed_type']" position="after">
+                <field name="service_type" string="Service Type" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

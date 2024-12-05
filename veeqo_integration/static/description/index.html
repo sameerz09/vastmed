@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Netframe Module | Descrition</title>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="lib/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+<section class="py-3" style="background-color: #fff;">
+    <div class="container">
+        <div class="mb-4 bg-white">
+            <div class="pt-4">
+                <ul class="nav nav-tabs justify-content-center bg-white pt-md-2" id="NetFrameDescriptionTabs" role="tablist">
+                    <li class="nav-item">
+                        <a aria-controls="netframe_module_overview" aria-selected="true" class="nav-link active" data-toggle="tab"
+                           href="#netframe_module_overview" id="netframe_module_overview-tab" role="tab">Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a aria-controls="netframe_module_maintainer" aria-selected="true" class="nav-link" data-toggle="tab"
+                           href="#netframe_module_maintainer" id="netframe_module_maintainer-tab" role="tab">About Netframe</a>
+                    </li>
+                    <li class="nav-item">
+                        <a aria-controls="netframe_module_support" aria-selected="true" class="nav-link" data-toggle="tab"
+                           href="#netframe_module_support" id="netframe_module_support-tab" role="tab">Support</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content p-md-5 p-2 py-3" id="KitworksDescriptionTabsContent">
+                <div aria-labelledby="netframe_module_overview-tab" class="tab-pane fade show active" id="netframe_module_overview" role="tabpanel">
+                    <div align="center">
+                        <h3>Shipsgo integration</h3>
+                    </div>
+                    <div>
+                        <p>This module makes it possible to automatically update the delivery date from the Shipsgo service based on the container number</p>
+                        <p>Install the Shipsgo integration module. To do this, go to the Main menu/Applications and type in the search
+                            'Shipsgo integration'. Click Install in the found app.</p>
+                        <div align="center"><img class="oe_screenshot" title="Example" style="border: 1px solid grey" src="1.png"/></div>
+                        <br/>
+                        <p>In the settings, in the inventory group, find the shipping subgroup and enter the api key from shipsgo.</p>
+                        <img class="oe_screenshot" title="Example" style="border: 1px solid grey" width='1080px' src="2.png"/>
+                        <br/>
+                        <br/>
+                        <p>In the sales module, we go to delivery</p>
+                        <img class="oe_screenshot" title="Example" style="border: 1px solid grey" width='1080px' src="3.png"/>
+                        <br/>
+                        <br/>
+                        <p>enter the container number in the B/L Number field</p>
+                        <div align="left"><img class="oe_screenshot" title="Example" style="border: 1px solid grey" width='1080px'  src="4.png"/></div>
+                        <br/>
+                        <br/>
+                        <p>You can configure and check the operation of the module by selecting Shipsgo eta update in Scheduled Actions.
+                            Here you can set the information update time and start execution manually. </p>
+                        <img class="oe_screenshot" title="Example" style="border: 1px solid grey" width='1080px' src="5.png"/>
+                        <br/>
+                        <br/>
+                        <p>After run the Shipsgo eta update</p>
+                        <img class="oe_screenshot" title="Example" style="border: 1px solid grey" width='1080px' src="6.png"/>
+                        <br/>
+                        <br/>
+                        <p>we go to the sales module, select delivery and there we will see that the arrival date of the container has been updated</p>
+                        <p>Note! Arrival date is updated for deliveries that have not yet arrived and 20 days after arrival</p>
+
+                        <img class="oe_screenshot" title="Example" style="border: 1px solid grey" width='1080px' src="7.png"/>
+                    </div>
+                </div>
+                <div aria-labelledby="netframe_module_maintainer-tab" class="tab-pane fade show" id="netframe_module_maintainer" role="tabpanel">
+                    <div class="p-3 p-lg-5">
+                        <a href="https://www.netframe.org/"><img alt="Netframe"
+                                                                 src="logo.png"/></a>
+                        <p>We are Ukrainian software developing company working with odoo.</p>
+                        <p>We specialize on solutions for Ukrainian market, however often do much more.</p>
+                        <p>Would be glad to talk about odoo customization and development for your company or your clients.</p>
+                        <p>Feel free to contact us by:</p>
+                        <p>Email: <a href="mailto:odoo@netframe.org">odoo@netframe.org</a></p>
+                        <p>Website: <a href="https://www.netframe.org/">	https://www.netframe.org</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="lib/js/jquery.slim.min.js"></script>
+<script src="lib/js/popper.min.js"></script>
+<script src="lib/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
