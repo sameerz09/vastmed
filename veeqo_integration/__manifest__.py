@@ -20,7 +20,8 @@
         # 'views/mrp_production_menu.xml',
         # 'views/mrp_production_views.xml',
         # 'data/ir_cron_data_fetchshipsgo.xml'
-        'data/sync_veeqo_products.xml'
+        'data/sync_veeqo_products.xml',
+        'data/veeqo_customer_cron.xml'
 
     ],
     'images': [

@@ -11,3 +11,4 @@
 from . import res_config_settings
 from . import veeqo_sync_wizard
 from . import veeqo_sync_wizard
+from . import veeqo_customer_sync_wizard
