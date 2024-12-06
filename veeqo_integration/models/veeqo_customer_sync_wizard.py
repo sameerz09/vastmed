@@ -1,6 +1,6 @@
 import logging
 import requests
-from odoo import models, api, _
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -11,24 +11,27 @@ class VeeqoCustomerSyncWizard(models.TransientModel):
 
     @api.model
     def sync_customers(self, query=None):
-        """Fetch all customers from Veeqo in one go and create/update in Odoo."""
+        """
+        Fetch all customers from the Veeqo API in a single request (if possible)
+        and create/update their records in Odoo's res.partner model.
+
+        :param query: (optional) A free-text search query to filter results.
+        """
         _logger.info("Starting Veeqo customer sync")
 
-        # Retrieve the API key from Odoo settings
         api_key = self.env['ir.config_parameter'].sudo().get_param('api_key')
         if not api_key:
-            _logger.error("API Key not found!")
+            _logger.error("API Key not found in system parameters!")
             raise ValueError(_('API Key is not configured. Please set it in Settings.'))
 
-        # Prepare the request to Veeqo API
         headers = {
             'x-api-key': api_key,
             'Content-Type': 'application/json',
         }
         url = 'https://api.veeqo.com/customers'
 
-        # Set a large page_size to attempt to fetch all customers at once.
-        # Adjust this number if you know the total number of customers.
+        # Try to fetch all customers at once by using a large page_size.
+        # Adjust page_size if you know how many customers to expect.
         page_size = 100000
         params = {
             'page_size': page_size,
@@ -40,19 +43,19 @@ class VeeqoCustomerSyncWizard(models.TransientModel):
         response = requests.get(url, headers=headers, params=params)
         if response.status_code == 200:
             customers = response.json()
-            _logger.info(f"Fetched {len(customers)} customers in one request.")
+            _logger.info("Fetched %d customers from Veeqo.", len(customers))
         else:
-            _logger.error(f"Error fetching data from Veeqo: {response.status_code} - {response.text}")
+            _logger.error("Error fetching data from Veeqo: %s - %s", response.status_code, response.text)
             raise UserError(_('Error fetching data from Veeqo.'))
 
-        # Process and store customers in Odoo
         self._process_customers(customers)
         return True
 
     def _process_customers(self, customers):
         """
-        Create or update customers in Odoo's res.partner model.
-        We'll treat these Veeqo customers as Odoo contacts.
+        Process each customer record from Veeqo and map it into Odoo's res.partner.
+
+        :param customers: A list of customer dictionaries from Veeqo.
         """
         Partner = self.env['res.partner']
 
@@ -63,15 +66,18 @@ class VeeqoCustomerSyncWizard(models.TransientModel):
             mobile = customer.get('mobile', '')
             full_name = customer.get('full_name') or self._get_full_name(customer)
 
-            # Extract billing address info
-            billing_addr = customer.get('billing_address', {})
+            # Extract billing address details
+            billing_addr = customer.get('billing_address', {}) or {}
             street = billing_addr.get('address1', '')
             street2 = billing_addr.get('address2', '')
             city = billing_addr.get('city', '')
             zip_code = billing_addr.get('zip', '')
             country_code = billing_addr.get('country', '')
 
+            # Search for an existing partner by email. If email is empty,
+            # consider using another unique field or skipping the search.
             existing_partner = Partner.search([('email', '=', email)], limit=1)
+
             partner_vals = {
                 'name': full_name or f"Customer {customer_id}",
                 'email': email,
@@ -90,17 +96,19 @@ class VeeqoCustomerSyncWizard(models.TransientModel):
 
             if existing_partner:
                 existing_partner.write(partner_vals)
-                _logger.info(f"Updated partner for customer {customer_id}: {existing_partner.name}")
+                _logger.info("Updated partner for customer %s: %s", customer_id, existing_partner.name)
             else:
                 new_partner = Partner.create(partner_vals)
-                _logger.info(f"Created new partner for customer {customer_id}: {new_partner.name}")
+                _logger.info("Created new partner for customer %s: %s", customer_id, new_partner.name)
 
     def _get_full_name(self, customer):
         """
-        Helper method to construct a full name if 'full_name' is not provided.
-        For example, try using the billing_address fields.
+        Construct a full name if 'full_name' is not provided by using billing address fields.
+
+        :param customer: A dictionary representing a single Veeqo customer.
+        :return: A full name string or 'No Name' if no name fields are found.
         """
-        billing_addr = customer.get('billing_address', {})
+        billing_addr = customer.get('billing_address', {}) or {}
         first_name = billing_addr.get('first_name', '')
         last_name = billing_addr.get('last_name', '')
         full_name = f"{first_name} {last_name}".strip()

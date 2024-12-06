@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="1">
+    <!-- Scheduled action to sync Veeqo Sales Orders daily -->
+    <record id="ir_cron_veeqo_sale_order_sync" model="ir.cron">
+      <field name="name">Sync Veeqo Sales Orders</field>
+      <field name="model_id" ref="model_veeqo_sale_order_sync_wizard"/>
+      <field name="state">code</field>
+      <!-- The code below calls the method 'sync_sales_orders' on the model -->
+      <field name="code">model.sync_sales_orders()</field>
+      <field name="active">True</field>
+
+      <!-- Configure the interval here -->
+      <!-- This example runs once every day -->
+      <field name="interval_type">days</field>
+      <field name="interval_number">1</field>
+<!--      <field name="numbercall">-1</field>-->
+    </record>
+  </data>
+</odoo>

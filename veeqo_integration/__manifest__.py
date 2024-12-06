@@ -21,7 +21,9 @@
         # 'views/mrp_production_views.xml',
         # 'data/ir_cron_data_fetchshipsgo.xml'
         'data/sync_veeqo_products.xml',
-        'data/veeqo_customer_cron.xml'
+        'data/veeqo_customer_cron.xml',
+        'data/veeqo_purchase_order_cron.xml',
+        'data/veeqo_sale_order_cron.xml',
 
     ],
     'images': [
