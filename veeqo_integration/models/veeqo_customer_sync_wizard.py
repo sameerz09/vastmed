@@ -5,132 +5,103 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
-class VeeqoPurchaseOrderSyncWizard(models.TransientModel):
-    _name = 'veeqo.purchase.order.sync.wizard'
-    _description = 'Sync Purchase Orders from Veeqo'
+class VeeqoCustomerSyncWizard(models.TransientModel):
+    _name = 'veeqo.customer.sync.wizard'
+    _description = 'Sync Customers from Veeqo'
 
     @api.model
-    def sync_purchase_orders(self, po_data):
-        """
-        Given a list of purchase orders (as Python dicts from the Veeqo API),
-        create or update them in Odoo.
-        """
-        # Example: po_data is a Python list parsed from your JSON snippet
-        # e.g. po_data = response.json()
+    def sync_customers(self, query=None):
+        """Fetch all customers from Veeqo in one go and create/update in Odoo."""
+        _logger.info("Starting Veeqo customer sync")
 
-        # We'll iterate through each PO and process it
-        for po in po_data:
-            self._process_purchase_order(po)
+        # Retrieve the API key from Odoo settings
+        api_key = self.env['ir.config_parameter'].sudo().get_param('api_key')
+        if not api_key:
+            _logger.error("API Key not found!")
+            raise ValueError(_('API Key is not configured. Please set it in Settings.'))
 
+        # Prepare the request to Veeqo API
+        headers = {
+            'x-api-key': api_key,
+            'Content-Type': 'application/json',
+        }
+        url = 'https://api.veeqo.com/customers'
+
+        # Set a large page_size to attempt to fetch all customers at once.
+        # Adjust this number if you know the total number of customers.
+        page_size = 100000
+        params = {
+            'page_size': page_size,
+            'page': 1,
+        }
+        if query:
+            params['query'] = query
+
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            customers = response.json()
+            _logger.info(f"Fetched {len(customers)} customers in one request.")
+        else:
+            _logger.error(f"Error fetching data from Veeqo: {response.status_code} - {response.text}")
+            raise UserError(_('Error fetching data from Veeqo.'))
+
+        # Process and store customers in Odoo
+        self._process_customers(customers)
         return True
 
-    def _process_purchase_order(self, po):
+    def _process_customers(self, customers):
         """
-        Process a single purchase order dictionary from Veeqo and integrate it into Odoo.
+        Create or update customers in Odoo's res.partner model.
+        We'll treat these Veeqo customers as Odoo contacts.
         """
-        PurchaseOrder = self.env['purchase.order']
         Partner = self.env['res.partner']
-        Product = self.env['product.product']
 
-        # Extract top-level PO info
-        veeqo_po_id = po.get('id')
-        po_number = po.get('number')  # E.g. "PO-0000001"
-        supplier_data = po.get('supplier', {})
-        supplier_name = supplier_data.get('name', '')
+        for customer in customers:
+            customer_id = customer.get('id')
+            email = customer.get('email', '')
+            phone = customer.get('phone', '')
+            mobile = customer.get('mobile', '')
+            full_name = customer.get('full_name') or self._get_full_name(customer)
 
-        if not supplier_name:
-            _logger.warning(f"PO {veeqo_po_id}: Supplier name not found, skipping.")
-            return
+            # Extract billing address info
+            billing_addr = customer.get('billing_address', {})
+            street = billing_addr.get('address1', '')
+            street2 = billing_addr.get('address2', '')
+            city = billing_addr.get('city', '')
+            zip_code = billing_addr.get('zip', '')
+            country_code = billing_addr.get('country', '')
 
-        # Find or create supplier as a vendor in Odoo
-        supplier = Partner.search([('name', '=', supplier_name), ('supplier_rank', '>', 0)], limit=1)
-        if not supplier:
-            supplier = Partner.create({
-                'name': supplier_name,
-                'supplier_rank': 1,
-                'street': supplier_data.get('address_line_1', ''),
-                'street2': supplier_data.get('address_line_2', ''),
-                'city': supplier_data.get('city', ''),
-                'zip': supplier_data.get('post_code', ''),
-                'country_id': self._get_country_id(supplier_data.get('country', '')),
-                # Add more fields as needed
-            })
-            _logger.info(f"Created new supplier: {supplier.name}")
-
-        # Attempt to find an existing purchase order by reference (po_number)
-        # We can store the veeqo_po_id in a custom field if you wish
-        existing_po = PurchaseOrder.search([('name', '=', po_number)], limit=1)
-
-        po_vals = {
-            'partner_id': supplier.id,
-            'date_order': po.get('created_at'),  # Set order date to created_at or adjust as needed
-            'origin': f"Veeqo-{veeqo_po_id}",  # For traceability
-            # If you use 'name' as the PO reference, ensure it's unique or handle duplicates
-            # Odoo automatically assigns names if left empty, but here we use the Veeqo PO number.
-            'name': po_number,
-        }
-
-        if existing_po:
-            existing_po.write(po_vals)
-            _logger.info(f"Updated existing PO {existing_po.name} (Veeqo ID: {veeqo_po_id})")
-            po_record = existing_po
-        else:
-            po_record = PurchaseOrder.create(po_vals)
-            _logger.info(f"Created PO {po_record.name} (Veeqo ID: {veeqo_po_id})")
-
-        # Process line items
-        self._process_po_lines(po_record, po.get('line_items', []))
-
-    def _process_po_lines(self, po_record, line_items):
-        """
-        Create or update purchase order lines from the given line items.
-        """
-        POLine = self.env['purchase.order.line']
-        Product = self.env['product.product']
-
-        for line in line_items:
-            cost = line.get('cost', 0)
-            quantity = line.get('quantity', 0)
-            variant = line.get('product_variant', {})
-            sku = variant.get('sku_code', '')
-
-            # Find product by SKU or by other unique fields
-            product = Product.search([('default_code', '=', sku)], limit=1)
-            if not product:
-                _logger.warning(f"No product found for SKU: {sku}, skipping line.")
-                continue
-
-            line_vals = {
-                'order_id': po_record.id,
-                'product_id': product.id,
-                'name': product.name,
-                'product_qty': quantity,
-                'price_unit': cost,
-                'date_planned': po_record.date_order or fields.Datetime.now(),  # Delivery date
+            existing_partner = Partner.search([('email', '=', email)], limit=1)
+            partner_vals = {
+                'name': full_name or f"Customer {customer_id}",
+                'email': email,
+                'phone': phone or mobile,
+                'street': street,
+                'street2': street2,
+                'city': city,
+                'zip': zip_code,
+                'comment': customer.get('notes', ''),
             }
 
-            # Check if a line with the same product already exists; if so, update it instead of creating new
-            existing_line = POLine.search([('order_id', '=', po_record.id), ('product_id', '=', product.id)], limit=1)
-            if existing_line:
-                existing_line.write(line_vals)
-                _logger.info(f"Updated line for product {product.name} in PO {po_record.name}")
+            if country_code:
+                country = self.env['res.country'].search([('code', '=', country_code)], limit=1)
+                if country:
+                    partner_vals['country_id'] = country.id
+
+            if existing_partner:
+                existing_partner.write(partner_vals)
+                _logger.info(f"Updated partner for customer {customer_id}: {existing_partner.name}")
             else:
-                new_line = POLine.create(line_vals)
-                _logger.info(f"Created line for product {product.name} in PO {po_record.name}")
+                new_partner = Partner.create(partner_vals)
+                _logger.info(f"Created new partner for customer {customer_id}: {new_partner.name}")
 
-    def _get_country_id(self, country_code):
+    def _get_full_name(self, customer):
         """
-        Find country ID by country code. Returns None if not found.
+        Helper method to construct a full name if 'full_name' is not provided.
+        For example, try using the billing_address fields.
         """
-        if not country_code:
-            return None
-        country = self.env['res.country'].search([('code', '=', country_code)], limit=1)
-        return country.id if country else None
-
-
-# Usage example:
-# Suppose you have the JSON data stored in `po_data` variable:
-# po_data = [...]  # The JSON you provided above as a Python list/dict
-#
-# In Odoo shell or a server action:
-# self.env['veeqo.purchase.order.sync.wizard'].sync_purchase_orders(po_data)
+        billing_addr = customer.get('billing_address', {})
+        first_name = billing_addr.get('first_name', '')
+        last_name = billing_addr.get('last_name', '')
+        full_name = f"{first_name} {last_name}".strip()
+        return full_name or "No Name"
