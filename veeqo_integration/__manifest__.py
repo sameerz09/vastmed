@@ -32,8 +32,8 @@
     ],
     # 'assets': {
     #         'web.assets_backend': [
-    #             'shipsgo_integration/static/src/css/custom_button_styles.css',
-    #             # 'shipsgo_integration/static/src/js/mrp_production.js',
+    #             'shipsgo_integration_old/static/src/css/custom_button_styles.css',
+    #             # 'shipsgo_integration_old/static/src/js/mrp_production.js',
     #         ],
     #     },
     'installable': True,

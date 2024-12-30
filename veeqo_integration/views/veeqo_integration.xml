@@ -27,6 +27,11 @@
                         <h4>Connection Veeqo</h4>
                         <div>
                             <field name="api_key" style="width:50%;" placeholder="Api key"/>
+
+                        </div>
+                        <h4>VEEQO Latest Order ID</h4>
+                         <div>
+                            <field name="latest_order_id" style="width:50%;" placeholder="VEEQO Latest Order ID"/>
                         </div>
                     </div>
                 </xpath>

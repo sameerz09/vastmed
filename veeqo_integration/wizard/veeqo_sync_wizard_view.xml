@@ -5,7 +5,7 @@
         <field name="binding_model_id" ref="model_res_config_settings"/>
         <field name="state">code</field>
         <field name="code">
-action = model.env['veeqo.sync.wizard'].create({}).sync_products()
+action = model.env['veeqo.sync.wizard'].create({}).sync_unfetched_sales_orders()
         </field>
     </record>
 </odoo>

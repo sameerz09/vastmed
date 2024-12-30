@@ -3,6 +3,7 @@ import requests
 import datetime
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+import json
 
 _logger = logging.getLogger(__name__)
 
@@ -10,14 +11,59 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
     _name = 'veeqo.sale.order.sync.wizard'
     _description = 'Sync Sales Orders from Veeqo'
 
+    # @api.model
+    # def sync_sales_orders(self):
+    #     """
+    #     Fetch all sales orders from Veeqo's /orders endpoint in one large request
+    #     and create/update them in Odoo as sale.orders.
+    #     """
+    #     _logger.info("Starting Veeqo sales order sync")
+    #
+    #     api_key = self.env['ir.config_parameter'].sudo().get_param('api_key')
+    #     if not api_key:
+    #         _logger.error("API Key not found!")
+    #         raise ValueError(_('API Key is not configured. Please set it in Settings.'))
+    #
+    #     headers = {
+    #         'x-api-key': api_key,
+    #         'Content-Type': 'application/json',
+    #     }
+    #
+    #     url = 'https://api.veeqo.com/orders'
+    #     page_size = 100000
+    #     since_id = 587138115
+    #     params = {
+    #         'page_size': page_size,
+    #         'page': 1,
+    #         'since_id': since_id,
+    #     }
+    #
+    #     response = requests.get(url, headers=headers, params=params)
+    #     if response.status_code == 200:
+    #         orders_data = response.json()
+    #         # Ensure orders_data is always a list
+    #         if isinstance(orders_data, dict):
+    #             orders_data = [orders_data]
+    #         _logger.info("Fetched %d sales orders from Veeqo.", len(orders_data))
+    #     else:
+    #         _logger.error("Error fetching sales orders from Veeqo: %s - %s", response.status_code, response.text)
+    #         raise UserError(_('Error fetching sales orders from Veeqo.'))
+    #
+    #     for order_data in orders_data:
+    #         self._process_sale_order(order_data)
+    #
+    #     return True
+
     @api.model
     def sync_sales_orders(self):
         """
         Fetch all sales orders from Veeqo's /orders endpoint in one large request
-        and create/update them in Odoo as sale.orders.
+        and create/update them in Odoo as sale.orders. Afterward, update the latest_order_id
+        with the ID of the latest order to avoid fetching duplicates.
         """
         _logger.info("Starting Veeqo sales order sync")
 
+        # Fetch the API key from system parameters
         api_key = self.env['ir.config_parameter'].sudo().get_param('api_key')
         if not api_key:
             _logger.error("API Key not found!")
@@ -30,27 +76,86 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
 
         url = 'https://api.veeqo.com/orders'
         page_size = 100000
+
+        # Get the current latest_order_id from system parameters
+        try:
+            latest_order_id = int(self.env['ir.config_parameter'].sudo().get_param('latest_order_id', '0'))
+        except ValueError:
+            _logger.warning("Invalid latest_order_id in system parameters. Defaulting to 0.")
+            latest_order_id = 0
+
         params = {
             'page_size': page_size,
             'page': 1,
+            'since_id': latest_order_id,
         }
 
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code == 200:
-            orders_data = response.json()
-            # Ensure orders_data is always a list
-            if isinstance(orders_data, dict):
-                orders_data = [orders_data]
-            _logger.info("Fetched %d sales orders from Veeqo.", len(orders_data))
-        else:
-            _logger.error("Error fetching sales orders from Veeqo: %s - %s", response.status_code, response.text)
-            raise UserError(_('Error fetching sales orders from Veeqo.'))
+        try:
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+        except requests.exceptions.RequestException as e:
+            _logger.error("Error fetching sales orders from Veeqo: %s", str(e))
+            raise UserError(_('Error fetching sales orders from Veeqo: %s') % str(e))
 
+        # Parse the response data
+        orders_data = response.json()
+        if isinstance(orders_data, dict):  # Ensure orders_data is always a list
+            orders_data = [orders_data]
+
+        _logger.info("Fetched %d sales orders from Veeqo.", len(orders_data))
+
+        # Process each order and track the latest ID
+        latest_id = latest_order_id + 1  # Increment the latest_order_id by 1
         for order_data in orders_data:
+            # Log the order ID and SKU details
+            sku_details = [
+                {
+                    "sku": item.get('product', {}).get('sku', 'N/A'),
+                    "available_stock": item.get('sellable', {}).get('available_stock_level_at_all_warehouses', 'N/A'),
+                    "title": item.get('title', 'No Title')
+                }
+                for item in order_data.get('line_items', [])
+            ]
+            _logger.info("Processing order ID: %s with Item Details: %s", order_data.get('id', 'Unknown'), sku_details)
+
+            for item in order_data.get('line_items', []):
+                sku = item.get('product', {}).get('sku', 'N/A')
+                available_stock = item.get('sellable', {}).get('available_stock_level_at_all_warehouses', 'N/A')
+                title = item.get('title', 'No Title')
+
+                # if sku == 'N/A' or not sku.strip():
+                #     _logger.warning(
+                #         "Invalid SKU in Order ID: %s. Title: %s, Available Stock: %s. Skipping line.",
+                #         order_data.get('id', 'Unknown'),
+                #         title,
+                #         available_stock
+                #     )
+                #     continue
+
+                product = self.env['product.product'].sudo().search([('barcode', '=', sku)], limit=1)
+                if product:
+                    on_hand_qty = product.qty_available
+                    _logger.info(
+                        "Product  test found for SKU: %s | Product Name: %s | On-Hand Qty: %s | API Available Stock: %s",
+                        sku, product.name, on_hand_qty, available_stock
+                    )
+                else:
+                    _logger.warning(
+                        "No product test found for SKU: %s in Order ID: %s. Title: %s, Available Stock: %s. Skipping line.",
+                        sku, order_data.get('id', 'Unknown'), title, available_stock
+                    )
+
             self._process_sale_order(order_data)
+            # Update the latest_id if the current order ID is greater
+            latest_id = max(latest_id, order_data.get('id', latest_order_id + 1))
+
+        # Update the config parameter for latest_order_id
+        self.env['ir.config_parameter'].sudo().set_param('latest_order_id', str(latest_id))
+        _logger.info("Updated 'latest_order_id' to %s", latest_id)
+
+        _logger.info("Sync complete. Updated latest_order_id to %d", latest_id)
 
         return True
-
     def _process_sale_order(self, order_data):
         """
         Convert a Veeqo order dict into Odoo sale.order and sale.order.line records.
@@ -99,6 +204,14 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
         else:
             so_record = SaleOrder.create(order_vals)
             _logger.info("Created Sale Order %s (Veeqo ID: %s)", so_record.name, veeqo_order_id)
+
+        # Print quantity on hand for products in the order
+        for line in so_record.order_line:
+            product = line.product_id
+            if product.exists():
+                _logger.info("Product: %s, Quantity on Hand: %s", product.display_name, product.qty_available)
+            else:
+                _logger.warning("Product not found for Sale Order %s", so_record.name)
 
         # Process line items
         line_items = order_data.get('line_items', []) or []
@@ -178,7 +291,7 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
             sku = sellable.get('sku_code', '')
 
             # Find product by SKU
-            product = Product.search([('default_code', '=', sku)], limit=1)
+            product = Product.search([('barcode', '=', sku)], limit=1)
             if not product:
                 _logger.warning("No product found for SKU: %s, skipping line.", sku)
                 continue
@@ -199,13 +312,16 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
             # (Optional) Handle taxes if you have a method to match tax_rate to a tax record
 
             # Check if a line with the same product exists
-            existing_line = SaleOrderLine.search([('order_id', '=', so_record.id), ('product_id', '=', product.id)], limit=1)
+            existing_line = SaleOrderLine.search([('order_id', '=', so_record.id), ('product_id', '=', product.id)],
+                                                 limit=1)
             if existing_line:
                 existing_line.write(line_vals)
-                _logger.info("Updated line for product %s in SO %s", product.name, so_record.name)
+                _logger.info("Updated line for product %s in SO %s | Barcode: %s", product.name, so_record.name,
+                             product.barcode)
             else:
                 new_line = SaleOrderLine.create(line_vals)
-                _logger.info("Created line for product %s in SO %s", product.name, so_record.name)
+                _logger.info("Created line for product %s in SO %s | Barcode: %s", product.name, so_record.name,
+                             product.barcode)
 
     def _get_or_create_child_address(self, parent_partner, addr):
         """
