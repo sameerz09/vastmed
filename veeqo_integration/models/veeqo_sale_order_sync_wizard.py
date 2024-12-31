@@ -216,8 +216,16 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
         # Process line items
         line_items = order_data.get('line_items', []) or []
         self._process_order_lines(so_record, line_items)
-        so_record.write({'state': 'draft'})
-        so_record.sudo().action_confirm()
+        if so_record.order_line:
+            so_record.write({'state': 'draft'})
+            so_record.sudo().action_confirm()
+            # Correct stock picking search
+            stock_picking = self.env['stock.picking'].search([('sale_id', '=', so_record.id)], limit=1)
+            stock_picking.button_validate()
+            if stock_picking:
+                _logger.info("Stock Picking found: %s for Sale Order %s", stock_picking.name, so_record.name)
+            else:
+                _logger.warning("No Stock Picking found for Sale Order %s", so_record.name)
 
     def _get_customer_and_shipping_partners(self, customer_info, order_data, veeqo_order_id):
         """
