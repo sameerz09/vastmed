@@ -226,6 +226,43 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
                 _logger.info("Stock Picking found: %s for Sale Order %s", stock_picking.name, so_record.name)
             else:
                 _logger.warning("No Stock Picking found for Sale Order %s", so_record.name)
+            for item in line_items:
+                stock_entry = item.get('sellable', {}).get('stock_entries')[0]
+                sku = item.get('sellable', {}).get('sku_code', 'N/A')
+                product = self.env['product.product'].sudo().search([('barcode', '=', sku)], limit=1)
+                if product:
+                    # API URL and Headers
+                    base_url = "https://api.veeqo.com"
+                    sellable_id = stock_entry.get('sellable_id')  # Replace with the actual sellable_id
+                    warehouse_id = stock_entry.get('warehouse_id')  # Replace with the actual warehouse_id
+                    url = f"{base_url}/sellables/{sellable_id}/warehouses/{warehouse_id}/stock_entry"
+                    api_key = self.env['ir.config_parameter'].sudo().get_param('api_key')
+                    if not api_key:
+                        _logger.error("API Key not found!")
+                        raise ValueError(_('API Key is not configured. Please set it in Settings.'))
+                    headers = {
+                        'x-api-key': api_key,
+                        'Content-Type': 'application/json',
+                    }
+                    # Request body
+                    payload = {
+                        "stock_entry": {
+                            "physical_stock_level": product.qty_available,
+
+                        }
+                    }
+
+                    # Sending the PUT request
+                    response = requests.put(url, headers=headers, json=payload)
+
+                    # Handling the response
+                    if response.status_code == 200:
+                        _logger.info("Stock entry updated successfully!")
+                        _logger.info("Response:", response.json())
+                    else:
+                        _logger.info("Failed to update stock entry!")
+                        _logger.info("Status Code:", response.status_code)
+                        _logger.info("Response:", response.json())
 
     def _get_customer_and_shipping_partners(self, customer_info, order_data, veeqo_order_id):
         """
