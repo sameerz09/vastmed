@@ -119,7 +119,7 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
             _logger.info("Processing order ID: %s with Item Details: %s", order_data.get('id', 'Unknown'), sku_details)
 
             for item in order_data.get('line_items', []):
-                sku = item.get('product', {}).get('sku', 'N/A')
+                sku = item.get('sellable', {}).get('sku_code', 'N/A')
                 available_stock = item.get('sellable', {}).get('available_stock_level_at_all_warehouses', 'N/A')
                 title = item.get('title', 'No Title')
 
@@ -216,6 +216,8 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
         # Process line items
         line_items = order_data.get('line_items', []) or []
         self._process_order_lines(so_record, line_items)
+        so_record.write({'state': 'draft'})
+        so_record.sudo().action_confirm()
 
     def _get_customer_and_shipping_partners(self, customer_info, order_data, veeqo_order_id):
         """
