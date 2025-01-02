@@ -338,7 +338,13 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
             sku = sellable.get('sku_code', '')
 
             # Find product by SKU
-            product = Product.search([('barcode', '=', sku)], limit=1)
+            # Find product by SKU
+            product = Product.search([
+                '|', '|',
+                ('barcode', '=', sku),
+                ('om_barcode', '=', sku),
+                ('vm_barcode', '=', sku)
+            ], limit=1)
             if not product:
                 _logger.warning("No product found for SKU: %s, skipping line.", sku)
                 continue

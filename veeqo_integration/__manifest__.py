@@ -12,6 +12,7 @@
         # 'data/shedule_action.xml',
         # 'data/scheduled_action2.xml',
         'views/veeqo_integration.xml',
+        'views/product_normal_form_view.xml',
         # 'views/stock_picking_views.xml',
         # 'views/account_move_view.xml',
         # 'views/res_partner_view.xml',
