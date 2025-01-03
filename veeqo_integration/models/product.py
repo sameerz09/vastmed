@@ -9,8 +9,8 @@ class ProductTemplate(models.Model):
         compute="_compute_barcodes",
         store=True,
     )
-    vm_barcode = fields.Char(
-        string="VM Barcode",
+    jv_barcode = fields.Char(
+        string="JV Barcode",
         help="International Article Number used for product identification.",
         compute="_compute_barcodes",
         store=True,
@@ -21,4 +21,4 @@ class ProductTemplate(models.Model):
         for record in self:
             barcode = record.barcode or ""
             record.om_barcode = f"OM-{barcode}" if barcode else ""
-            record.vm_barcode = f"VM-{barcode}" if barcode else ""
+            record.jv_barcode = f"JV-{barcode}" if barcode else ""

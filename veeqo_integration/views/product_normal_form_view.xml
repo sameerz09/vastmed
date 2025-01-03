@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <field name="barcode" position="after">
                <field name="om_barcode"/>
-                <field name="vm_barcode"/>
+                <field name="jv_barcode"/>
             </field>
         </field>
     </record>

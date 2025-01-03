@@ -343,7 +343,7 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
                 '|', '|',
                 ('barcode', '=', sku),
                 ('om_barcode', '=', sku),
-                ('vm_barcode', '=', sku)
+                ('jv_barcode', '=', sku)
             ], limit=1)
             if not product:
                 _logger.warning("No product found for SKU: %s, skipping line.", sku)
