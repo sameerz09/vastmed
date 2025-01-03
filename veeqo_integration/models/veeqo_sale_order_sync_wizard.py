@@ -229,7 +229,12 @@ class VeeqoSaleOrderSyncWizard(models.TransientModel):
             for item in line_items:
                 stock_entry = item.get('sellable', {}).get('stock_entries')[0]
                 sku = item.get('sellable', {}).get('sku_code', 'N/A')
-                product = self.env['product.product'].sudo().search([('barcode', '=', sku)], limit=1)
+                product = self.env['product.product'].sudo().search([
+                '|', '|',
+                ('barcode', '=', sku),
+                ('om_barcode', '=', sku),
+                ('jv_barcode', '=', sku)
+            ], limit=1)
                 if product:
                     # API URL and Headers
                     base_url = "https://api.veeqo.com"
